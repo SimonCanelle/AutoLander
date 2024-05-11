@@ -10,25 +10,22 @@ class Coordinate:
     alt: float
 
 def main():
-    global vehicle
-    global cmds
-    global lzCoord
     vehicle = connectToDrone()
-    cmds = getMission()
-    waitForMissionEnd()
+    cmds = getMission(vehicle)
+    waitForMissionEnd(vehicle, cmds)
     lzCoord = getTargetPosition()
-    executeLanding()
+    executeLanding(vehicle, cmds, lzCoord)
 
 def connectToDrone():
     return connect(droneLink, wait_ready=True)
 
-def getMission():
+def getMission(vehicle):
     cmds = vehicle.commands
     cmds.download()
     cmds.wait_ready()
     return cmds
 
-def waitForMissionEnd():
+def waitForMissionEnd(vehicle, cmds):
     readyToLand = False
     while(not readyToLand):
         #loiter at mission end
@@ -37,8 +34,6 @@ def waitForMissionEnd():
             #TODO verify waypoint start id (0 or 1)
             if cmds.next == cmds.count-1:
                 readyToLand = True
-
-
 
 def getTargetPosition():
     #TODO 1. get drone gps coordinate
@@ -55,15 +50,17 @@ def getTargetPosition():
     #[48.51079433248238, -71.64953214980738, 0]      # Alma
     lzCoord.lat = 48.51079433248238     #TODO get better default values! Takeoff point?
     lzCoord.lon = -71.64953214980738
-    lzCoord.alt = 0
+    lzCoord.alt = 15
     return lzCoord
 
-def executeLanding():
+def executeLanding(vehicle, cmds, lzCoord):
     landCmd = Command(0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT,
                                mavutil.mavlink.MAV_CMD_NAV_LAND, 0, 0,
                                0, mavutil.mavlink.PRECISION_LAND_MODE_DISABLED, 0, 0, lzCoord.lat, lzCoord.lon, lzCoord.alt)
 
-    #TODO check if its better to add a waypoint at the end or clear and create new mission with one point(land)
+    #TODO check if its better to
+    # 1. add a waypoint at the end and continue mission
+    # 2. clear and create new mission with one point : land
     #TODO make sure that MIS_RESTART is properly set to restart mission from start
     cmds.clear()
     cmds.add(landCmd)
