@@ -5,17 +5,12 @@ import serial
 import cv2
 from geographiclib.geodesic import Geodesic as geo
 
-droneLink = '127.0.0.1:14550'
-camPortName = '/dev/ttyS2'  #TODO verify serial connection and orangepi-config
+droneLink = '127.0.0.1:14550'   #TODO verify mavlink-router udp port used
+camPortName = '/dev/ttyS2'      #TODO verify serial connection and orangepi-config
 camId = 0
 
 # we know the altitude???
-altitude = 20   #TODO set altitude to loiter alt
-fov = 160
-pfov = 120
-
-
-repeat = True
+altitude = 15   #TODO set altitude to loiter alt
 
 class Coordinate:
     lat: float
@@ -36,10 +31,11 @@ def main():
     #modify and execute mission for landing
     executeLanding(vehicle, cmds, lzCoord)
     #close everything
-    #TODO
+    camPort.close()
 
 def connectToDrone():
     connected = False
+    vehicle = None
     while not connected:
         try:
             vehicle = connect(droneLink, wait_ready=True)
@@ -59,12 +55,14 @@ def waitForMissionEnd(vehicle, cmds):
     readyToLand = False
     while(not readyToLand):
         #loiter at mission end
+        #TODO verify end of mission mode
         if vehicle.mode.name == VehicleMode('LOITER'):
             #ready to land when num of mission items = next
             if cmds.next == cmds.count-1:
                 readyToLand = True
 
 def getTargetPosition(vehicle, camPort):
+    #TODO non detection behavior
     #1. get drone gps coordinate
     droneCoord = vehicle.location.global_relative_frame
     #2. get image
