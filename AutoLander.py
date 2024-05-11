@@ -1,10 +1,9 @@
-import sys
-import socket
 from dronekit import Command, connect, VehicleMode, mavutil
 import time
 import numpy as np
 import serial
 import cv2
+from geographiclib.geodesic import Geodesic as geo
 
 droneLink = '127.0.0.1:14550'
 camPortName = '/dev/ttyS2'  #TODO verify serial connection and orangepi-config
@@ -67,23 +66,29 @@ def waitForMissionEnd(vehicle, cmds):
                 readyToLand = True
 
 def getTargetPosition(vehicle, camPort):
-    #TODO 1. get drone gps coordinate
+    #1. get drone gps coordinate
     droneCoord = vehicle.location.global_relative_frame
+    #2. get image
+    img = get_image()
+    #3. find target
+    #3.1 find blue
+    contour, mask = find_blue(img)
+    #3.2 find target area
+    target_x, target_y = find_target(img, contour)
+    #3.3 find target center
+    center_x, center_y = find_image_center(img)
+    #4 calculate target gps coord
+    x, y = distance(target_x, target_y, center_x, center_y)
 
-    #TODO 2. get image
-    #TODO 3. find target
-    #TODO 3.1 find blue
-    #TODO 3.2 find target area
-    #TODO 3.3 find target center
-    #TODO 4 calculate target gps coord
-
-    #[48.51079433248238, -71.64953214980738, 0]      # Alma
-    #lzCoord = vehicle.home_location  # not observable??? check with takeoff mission item??
-    #TODO verify Alma coordinates
+    # [48.51079433248238, -71.64953214980738, 0]      # Alma
+    # lzCoord = vehicle.home_location  # not observable??? check with takeoff mission item??
+    # TODO verify Alma coordinates
     lzCoord = Coordinate
     lzCoord.lat = 48.51079433248238
     lzCoord.lon = -71.64953214980738
     lzCoord.alt = 15
+
+    lzCoord = move_gps(x, y, droneCoord)
     return lzCoord
 
 def executeLanding(vehicle, cmds, lzCoord):
@@ -103,6 +108,33 @@ def executeLanding(vehicle, cmds, lzCoord):
     #continue mission with landing nav point
     vehicle.mode = VehicleMode("AUTO")
 
+def distance(target_x, target_y, center_x, center_y):
+
+    pixel_size_metre = 0.000729394*altitude + 0.0000000013
+
+    x = (target_x - center_x) * pixel_size_metre
+    y = (center_y - target_y) * pixel_size_metre
+
+    print("Moving by: " + str(x) + "m east; " + str(y) + "m north")
+
+    return x, y
+
+def move_gps(x, y, droneCoord):
+    # https://gis.stackexchange.com/a/412001
+    geod = geo.WGS84
+    theta = np.arctan2(y, x)
+    azimuth = theta - 90
+    dist = np.sqrt(x**2 + y**2)
+
+    g = geod.Direct(droneCoord.lat, droneCoord.lon, azimuth, dist)
+    targetCoord = Coordinate
+    targetCoord.lat = g["lat2"]
+    targetCoord.lon = g["lon2"]
+    targetCoord.alt = 0 #assuming that we are in relative alt to home and takeoff is 0
+
+    print("Moving " + str(dist) + "m at " + str(y) + "°")
+
+    return targetCoord
 
 def get_image():
     img = None
@@ -180,6 +212,7 @@ def find_blue(img):
     else:
         print("Could not find blue color in image")
         return [], None
+
 def find_image_center(img):
     x = img.shape[1] // 2
     y = img.shape[0] // 2
