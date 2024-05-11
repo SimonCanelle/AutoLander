@@ -8,7 +8,7 @@ from geographiclib.geodesic import Geodesic as geo
 droneLink = '127.0.0.1:14550'   #TODO verify mavlink-router udp port used
 camPortName = '/dev/ttyS2'      #TODO verify serial connection and orangepi-config
 camId = 0
-
+maxRetries = 100
 # we know the altitude???
 altitude = 15   #TODO set altitude to loiter alt
 
@@ -27,7 +27,7 @@ def main():
     #wait for mission end
     waitForMissionEnd(vehicle, cmds)
     #find landing target
-    lzCoord = getTargetPosition(vehicle, camPort)
+    lzCoord = getTargetPosition(vehicle)
     #modify and execute mission for landing
     executeLanding(vehicle, cmds, lzCoord)
     #close everything
@@ -61,29 +61,40 @@ def waitForMissionEnd(vehicle, cmds):
             if cmds.next == cmds.count-1:
                 readyToLand = True
 
-def getTargetPosition(vehicle, camPort):
-    #TODO non detection behavior
-    #1. get drone gps coordinate
-    droneCoord = vehicle.location.global_relative_frame
-    #2. get image
-    img = get_image()
-    #3. find target
-    #3.1 find blue
-    contour, mask = find_blue(img)
-    #3.2 find target area
-    target_x, target_y = find_target(img, contour)
-    #3.3 find target center
-    center_x, center_y = find_image_center(img)
+def getTargetPosition(vehicle):
+    #
+    for i in range(0, maxRetries):
+        #1. get drone gps coordinate
+        droneCoord = vehicle.location.global_relative_frame
+        #2. get image
+        img = get_image()
+
+        #3. find target
+        #3.1 find blue
+        contour, mask = find_blue(img)
+        #3.2 find target area
+        target_x, target_y = find_target(img, contour)
+        if [target_x, target_y] != [0, 0]:
+            break
+        time.sleep(1)
+
+    #if 0,0 no target land there
+    if [target_x, target_y] == [0, 0]:
+        center_x = 0
+        center_y = 0
+    else:
+        #3.3 find target center
+        center_x, center_y = find_image_center(img)
     #4 calculate target gps coord
     x, y = distance(target_x, target_y, center_x, center_y)
 
     # [48.51079433248238, -71.64953214980738, 0]      # Alma
     # lzCoord = vehicle.home_location  # not observable??? check with takeoff mission item??
     # TODO verify Alma coordinates
-    lzCoord = Coordinate
-    lzCoord.lat = 48.51079433248238
-    lzCoord.lon = -71.64953214980738
-    lzCoord.alt = 15
+    #lzCoord = Coordinate
+    #lzCoord.lat = 48.51079433248238
+    #lzCoord.lon = -71.64953214980738
+    #lzCoord.alt = 15
 
     lzCoord = move_gps(x, y, droneCoord)
     return lzCoord
