@@ -8,7 +8,6 @@ from geographiclib.geodesic import Geodesic as geo
 droneLink = '127.0.0.1:14550'
 camPortName = '/dev/ttyS2'  #TODO verify serial connection and orangepi-config
 camId = 0
-cameraRotation = 0
 
 # we know the altitude???
 altitude = 20   #TODO set altitude to loiter alt
@@ -166,13 +165,6 @@ def get_image():
 
     if cap is not None:
         cap.release()
-
-    if cameraRotation != 0:
-        cv2.imshow("non-rotated", img)
-        cv2.waitKey(2000)
-        img = cv2.rotate(img, cameraRotation)
-        cv2.imshow("rotated", img)
-        cv2.waitKey(2000)
 
     return img
 
