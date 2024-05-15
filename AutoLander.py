@@ -12,25 +12,50 @@ maxRetries = 100
 # we know the altitude???
 altitude = 15   #TODO set altitude to loiter alt
 
+debugPrint = True
+
 class Coordinate:
     lat: float
     lon: float
     alt: float
 
 def main():
+    if debugPrint:
+        print("Starting AutoLander")
+
     #setup camera
+    if debugPrint:
+        print("Connecting to camera")
     camPort = open_camPort()
-    #connect tot drone
+
+    #connect totdrone
+    if debugPrint:
+        print("Connecting to drone")
     vehicle = connectToDrone()
+
     #download mission
+    if debugPrint:
+        print("Getting mission from drone")
     cmds = getMission(vehicle)
+
     #wait for mission end
+    if debugPrint:
+        print("Waiting for mission end")
     waitForMissionEnd(vehicle, cmds)
+
     #find landing target
+    if debugPrint:
+        print("Starting lz detection")
     lzCoord = getTargetPosition(vehicle)
+
     #modify and execute mission for landing
+    if debugPrint:
+        print("Sending nav point to drone")
     executeLanding(vehicle, cmds, lzCoord)
+
     #close everything
+    if debugPrint:
+        print("Program finished")
     camPort.close()
 
 def connectToDrone():
@@ -53,6 +78,15 @@ def getMission(vehicle):
 
 def waitForMissionEnd(vehicle, cmds):
     readyToLand = False
+
+    #wait for mission start
+    while vehicle.mode.name != VehicleMode('AUTO'):
+        if debugPrint:
+            print("Waiting for mission start")
+            time.sleep(5)
+
+    if debugPrint:
+        print("Waiting for mission end")
     while(not readyToLand):
         #loiter at mission end
         #TODO verify end of mission mode
