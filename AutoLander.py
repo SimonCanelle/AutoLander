@@ -86,7 +86,7 @@ def waitForMissionEnd(vehicle, cmds):
     while(not readyToLand):
         #loiter at mission end
         #TODO verify end of mission mode
-        if vehicle.mode.name == VehicleMode('LOITER'):
+        if vehicle.mode.name == VehicleMode('LOITER') or vehicle.mode.name == VehicleMode('QLOITER'):
             #ready to land when num of mission items = next
             if cmds.next == cmds.count-1:
                 readyToLand = True
@@ -218,7 +218,6 @@ def get_image():
 
     while(True):
         ret, frame = cap.read()
-        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         if cv2.countNonZero(gray) > 1:
             img = frame
@@ -243,7 +242,7 @@ def find_target(img, largest_contour):
         return 0, 0
 
 def find_blue(img):
-    # Define range of blue color in RGB
+    # Define range of blue color in RGB ##why RGB? BGR is fine...
     #lower_blue = np.array([[np.array([100, 200, 150], dtype=np.uint8)]])
     #upper_blue = np.array([[np.array([220, 255, 255], dtype=np.uint8)]])
     lower_blue = np.array([30,  100, 200])
@@ -252,7 +251,7 @@ def find_blue(img):
     # Convert to HSV
     #lower_blue = cv2.cvtColor(lower_blue, cv2.COLOR_RGB2HSV)
     #upper_blue = cv2.cvtColor(upper_blue, cv2.COLOR_RGB2HSV)
-    hsv = cv2.cvtColor(img, cv2.COLOR_RGB2HSV)
+    hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
 
     # Threshold the HSV image to get only blue colors
     mask = cv2.inRange(hsv, lower_blue, upper_blue)
@@ -278,6 +277,7 @@ def find_image_center(img):
     return x, y
 
 def open_camPort():
+    #unused with usb camera
     global pargs
     if pargs.serialcamera:
         camConnected = False
@@ -294,13 +294,30 @@ def open_camPort():
 
 def argParser():
     parser = argparse.ArgumentParser()
-    parser.add_argument("-pf",  "--picturefile", default=None, type=str, help="To use a photo instead of camera, path to image")
-    parser.add_argument("-gps", "--fakegps",     default=None, type=float, nargs=3, help="fake gps coordinates for testing lat lon alt")
-    parser.add_argument("-pm",  "--printmission",default=None,  action="store_true", help="print mission to terminal") #deactivate send to drone???
-    parser.add_argument("-d",   "--debugprints", default=None, action="store_true", help="activate debug debug prints")
-    parser.add_argument("-si",  "--showimage", default=None, action="store_true", help="show images on screen")
-    parser.add_argument("-sc",  "--serialcamera", default=None, type=str, help="use serial camera")
-    parser.add_argument("-dl",  "--dronelink", type=str, default='127.0.0.1:14550', help="drone link")
+    parser.add_argument("-pf",  "--picturefile",    default=None, type=str,
+                        help="To use a photo instead of camera, path to image")
+
+    parser.add_argument("-gps", "--fakegps",        default=None, type=float, nargs=3,
+                        help="fake gps coordinates for testing lat lon alt")
+
+    parser.add_argument("-pm",  "--printmission",   default=None,  action="store_true",
+                        help="print mission to terminal") #deactivate send to drone???
+
+    parser.add_argument("-d",   "--debugprints",    default=None, action="store_true",
+                        help="activate debug debug prints")
+
+    parser.add_argument("-si",  "--showimage",      default=None, action="store_true",
+                        help="show images on screen")
+
+    parser.add_argument("-sc",  "--serialcamera",   default=None, type=str,
+                        help="activate serial camera with path $VALUE$")
+
+    parser.add_argument("-dl",  "--dronelink",      default='127.0.0.1:14550', type=str,
+                        help="drone comm link")
+
+    parser.add_argument("-sd",  "--savedetection",  default=None, action="store_true",
+                        help="save captured detection picture")
+
     global pargs
     pargs = parser.parse_args()
 

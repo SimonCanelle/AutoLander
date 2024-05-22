@@ -257,10 +257,10 @@ def find_blue(img):
     # Define range of blue color in RGB
     #lower_blue = np.array([[np.array([100, 200, 150], dtype=np.uint8)]])
     #upper_blue = np.array([[np.array([220, 255, 255], dtype=np.uint8)]])
-    lower_blue = np.array([100,  80, 100])
-    upper_blue = np.array([300, 255, 255])
-    #lower_blue = np.array([low_H,  low_S, low_V])
-    #upper_blue = np.array([high_H, high_S, high_V])
+    #lower_blue = np.array([100,  80, 100])
+    #upper_blue = np.array([300, 255, 255])
+    lower_blue = np.array([low_H,  low_S, low_V])
+    upper_blue = np.array([high_H, high_S, high_V])
 
     # Convert to HSV
     #lower_blue = cv2.cvtColor(lower_blue, cv2.COLOR_RGB2HSV)
