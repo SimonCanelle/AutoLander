@@ -3,67 +3,65 @@ import time
 import numpy as np
 import serial
 import cv2
+import argparse
 from geographiclib.geodesic import Geodesic as geo
 
-droneLink = '127.0.0.1:14550'   #TODO verify mavlink-router udp port used
-camPortName = '/dev/ttyS2'      #TODO verify serial connection and orangepi-config
 camId = 0
 maxRetries = 100
 # we know the altitude???
 altitude = 15   #TODO set altitude to loiter alt
 
-debugPrint = True
+pargs = None
 
 class Coordinate:
     lat: float
     lon: float
     alt: float
 
+def debPrint(message:str):
+    global pargs
+    if pargs.debugprints:
+        print(message)
+
 def main():
-    if debugPrint:
-        print("Starting AutoLander")
+    debPrint("Starting AutoLander")
 
     #setup camera
-    if debugPrint:
-        print("Connecting to camera")
+    debPrint("Connecting to camera")
     camPort = open_camPort()
 
     #connect totdrone
-    if debugPrint:
-        print("Connecting to drone")
+    debPrint("Connecting to drone")
     vehicle = connectToDrone()
 
     #download mission
-    if debugPrint:
-        print("Getting mission from drone")
+    debPrint("Getting mission from drone")
     cmds = getMission(vehicle)
 
     #wait for mission end
-    if debugPrint:
-        print("Waiting for mission end")
+    debPrint("Waiting for mission end")
     waitForMissionEnd(vehicle, cmds)
 
     #find landing target
-    if debugPrint:
-        print("Starting lz detection")
+    debPrint("Starting lz detection")
     lzCoord = getTargetPosition(vehicle)
 
     #modify and execute mission for landing
-    if debugPrint:
-        print("Sending nav point to drone")
+    debPrint("Sending nav point to drone")
     executeLanding(vehicle, cmds, lzCoord)
 
     #close everything
-    if debugPrint:
-        print("Program finished")
+    debPrint("Program finished")
     camPort.close()
+    vehicle.close()
 
 def connectToDrone():
+    global pargs
     connected = False
     vehicle = None
     while not connected:
         try:
-            vehicle = connect(droneLink, wait_ready=True)
+            vehicle = connect(pargs.dronelink, wait_ready=True)
             connected = True
         except:
             #wait before trying to connect again
@@ -80,13 +78,11 @@ def waitForMissionEnd(vehicle, cmds):
     readyToLand = False
 
     #wait for mission start
-    while vehicle.mode.name != VehicleMode('AUTO'):
-        if debugPrint:
-            print("Waiting for mission start")
-            time.sleep(5)
+    while vehicle.mode.name != VehicleMode('AUTO') and cmds.next > 0:
+        debPrint("Waiting for mission start")
+        time.sleep(5)
 
-    if debugPrint:
-        print("Waiting for mission end")
+    debPrint("Waiting for mission end")
     while(not readyToLand):
         #loiter at mission end
         #TODO verify end of mission mode
@@ -96,13 +92,20 @@ def waitForMissionEnd(vehicle, cmds):
                 readyToLand = True
 
 def getTargetPosition(vehicle):
-    #
+    global pargs
     for i in range(0, maxRetries):
         #1. get drone gps coordinate
-        droneCoord = vehicle.location.global_relative_frame
+        if pargs.fakegps:
+            droneCoord = Coordinate
+            droneCoord.lat = pargs.fakegps[0]
+            droneCoord.lon = pargs.fakegps[1]
+            droneCoord.alt = pargs.fakegps[2]
+
+        else:
+            droneCoord = vehicle.location.global_relative_frame
+
         #2. get image
         img = get_image()
-
         #3. find target
         #3.1 find blue
         contour, mask = find_blue(img)
@@ -122,6 +125,8 @@ def getTargetPosition(vehicle):
     #4 calculate target gps coord
     x, y = distance(target_x, target_y, center_x, center_y)
 
+
+
     # [48.51079433248238, -71.64953214980738, 0]      # Alma
     # lzCoord = vehicle.home_location  # not observable??? check with takeoff mission item??
     # TODO verify Alma coordinates
@@ -130,10 +135,21 @@ def getTargetPosition(vehicle):
     #lzCoord.lon = -71.64953214980738
     #lzCoord.alt = 15
 
-    lzCoord = move_gps(x, y, droneCoord)
-    return lzCoord
+    if pargs.showimages:
+        imgshow = cv2.drawContours(img, contour, -1, (0, 255, 0), 2)
+        cv2.line(imgshow, (center_x, center_y), (center_x+3, center_y), (0, 255, 0), 2)
+        cv2.line(imgshow, (center_x, center_y), (center_x-3, center_y), (0, 255, 0), 2)
+        cv2.line(imgshow, (center_x, center_y), (center_x, center_y+3), (0, 255, 0), 2)
+        cv2.line(imgshow, (center_x, center_y), (center_x, center_y-3), (0, 255, 0), 2)
+        cv2.imshow("detection", imgshow)
+        cv2.waitKey(0)
 
+    lzCoord = move_gps(x, y, droneCoord)
+    debPrint("lzCoord lat:"+str(lzCoord.lat)+" long:"+str(lzCoord.lon)+" alt:"+str(lzCoord.alt))
+    return lzCoord
+    cmds = []
 def executeLanding(vehicle, cmds, lzCoord):
+    global pargs
     landCmd = Command(0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT,
                                mavutil.mavlink.MAV_CMD_NAV_LAND, 0, 0,
                                0, mavutil.mavlink.PRECISION_LAND_MODE_DISABLED, 0, 0, lzCoord.lat, lzCoord.lon, lzCoord.alt)
@@ -145,8 +161,13 @@ def executeLanding(vehicle, cmds, lzCoord):
     # 2.1 make sure that MIS_RESTART is properly set to RESTART mission from start
     cmds.clear()
     cmds.add(landCmd)
-    cmds.upload()
 
+    if pargs.printmission:
+        for cmd in cmds:
+            print(cmd.command)
+            print(cmd.location.global_relative_frame)
+
+    cmds.upload()
     #continue mission with landing nav point
     vehicle.mode = VehicleMode("AUTO")
 
@@ -157,7 +178,7 @@ def distance(target_x, target_y, center_x, center_y):
     x = (target_x - center_x) * pixel_size_metre
     y = (center_y - target_y) * pixel_size_metre
 
-    print("Moving by: " + str(x) + "m east; " + str(y) + "m north")
+    debPrint("Moving by: " + str(x) + "m east; " + str(y) + "m north")
 
     return x, y
 
@@ -174,7 +195,7 @@ def move_gps(x, y, droneCoord):
     targetCoord.lon = g["lon2"]
     targetCoord.alt = 0 #assuming that we are in relative alt to home and takeoff is 0
 
-    print("Moving " + str(dist) + "m at " + str(y) + "°")
+    debPrint("Moving " + str(dist) + "m at " + str(y) + "°")
 
     return targetCoord
 
@@ -192,7 +213,7 @@ def get_image():
             # waitTime = datetime.datetime.now() + datetime.timedelta(seconds=10)
             # pause.until(waitTime)
         except:
-            print("Unable to open camera with camId == " + str(camId))
+            debPrint(str("Unable to open camera with camId == " + str(camId)))
             camId += 1
 
     while(True):
@@ -201,10 +222,10 @@ def get_image():
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         if cv2.countNonZero(gray) > 1:
             img = frame
-            print("Got picture")
+            debPrint("Got picture")
             break
         else:
-            print("Could not take picture of the ground")
+            debPrint("Could not take picture of the ground")
 
     if cap is not None:
         cap.release()
@@ -245,28 +266,44 @@ def find_blue(img):
         largest_contour = max(contours, key=cv2.contourArea)
         return largest_contour, mask
     else:
-        print("Could not find blue color in image")
+        debPrint("Could not find blue color in image")
         return [], None
 
 def find_image_center(img):
     x = img.shape[1] // 2
     y = img.shape[0] // 2
 
-    print(f"Center coordinates: ({x}, {y})")
+    debPrint(f"Center coordinates: ({x}, {y})")
 
     return x, y
 
 def open_camPort():
-    camConnected = False
-    port = None
-    while not camConnected:
-        try:
-            port = serial.Serial(camPortName, baudrate=57600, timeout=1.0)
-            camConnected = True
-        except:
-            time.sleep(5)
-    return port
+    global pargs
+    if pargs.serialcamera:
+        camConnected = False
+        port = None
+        while not camConnected:
+            try:
+                port = serial.Serial(pargs.serialcamera, baudrate=57600, timeout=1.0)
+                camConnected = True
+            except:
+                time.sleep(5)
+        return port
+    else:
+        return None
 
+def argParser():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-pf",  "--picturefile", default=None, type=str, help="To use a photo instead of camera, path to image")
+    parser.add_argument("-gps", "--fakegps",     default=None, type=float, nargs=3, help="fake gps coordinates for testing lat lon alt")
+    parser.add_argument("-pm",  "--printmission",default=None,  action="store_true", help="print mission to terminal") #deactivate send to drone???
+    parser.add_argument("-d",   "--debugprints", default=None, action="store_true", help="activate debug debug prints")
+    parser.add_argument("-si",  "--showimage", default=None, action="store_true", help="show images on screen")
+    parser.add_argument("-sc",  "--serialcamera", default=None, type=str, help="use serial camera")
+    parser.add_argument("-dl",  "--dronelink", type=str, default='127.0.0.1:14550', help="drone link")
+    global pargs
+    pargs = parser.parse_args()
 
 if __name__ == "__main__":
+    argParser()
     main()
