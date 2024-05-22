@@ -11,6 +11,9 @@ maxRetries = 100
 # we know the altitude???
 altitude = 15   #TODO set altitude to loiter alt
 
+camFOV = 55 #in degrees
+camRes = [1080, 720] #x ,y
+
 pargs = None
 
 class Coordinate:
@@ -90,6 +93,7 @@ def waitForMissionEnd(vehicle, cmds):
             #ready to land when num of mission items = next
             if cmds.next == cmds.count-1:
                 readyToLand = True
+        time.sleep(1)
 
 def getTargetPosition(vehicle):
     global pargs
@@ -150,6 +154,7 @@ def getTargetPosition(vehicle):
     cmds = []
 def executeLanding(vehicle, cmds, lzCoord):
     global pargs
+
     landCmd = Command(0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT,
                                mavutil.mavlink.MAV_CMD_NAV_LAND, 0, 0,
                                0, mavutil.mavlink.PRECISION_LAND_MODE_DISABLED, 0, 0, lzCoord.lat, lzCoord.lon, lzCoord.alt)
@@ -298,7 +303,7 @@ def argParser():
                         help="To use a photo instead of camera, path to image")
 
     parser.add_argument("-gps", "--fakegps",        default=None, type=float, nargs=3,
-                        help="fake gps coordinates for testing lat lon alt")
+                        help="fake gps coordinates for testing, lat lon alt")
 
     parser.add_argument("-pm",  "--printmission",   default=None,  action="store_true",
                         help="print mission to terminal") #deactivate send to drone???
@@ -315,8 +320,16 @@ def argParser():
     parser.add_argument("-dl",  "--dronelink",      default='127.0.0.1:14550', type=str,
                         help="drone comm link")
 
+#TODO
     parser.add_argument("-sd",  "--savedetection",  default=None, action="store_true",
                         help="save captured detection picture")
+
+    parser.add_argument("-ao",  "--addoroverwrite", default=True, type=bool,
+                        help="Overwrite mission (True) or add landing point to end of mission (False)")
+
+    parser.add_argument("-rtl", "--returntolanding", default=None,  action="store_true",
+                        help="return to home location (launch point) instead of \
+                        landing straight down in case of no detection")
 
     global pargs
     pargs = parser.parse_args()

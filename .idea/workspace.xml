@@ -7,7 +7,6 @@
     <list default="true" id="2b462339-c44c-446d-a821-8272cbe455d3" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/AutoLander.py" beforeDir="false" afterPath="$PROJECT_DIR$/AutoLander.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/DetectionTest.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/DetectionTest.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
