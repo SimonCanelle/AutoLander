@@ -149,7 +149,7 @@ def find_image_center(img):
 
 def distanceXY(target_x, target_y, center_x, center_y):
     #TODO calcul de grosseur de pixel
-    pixel_size_metre = 0.000729394*vehicle.location.global_relative_frame.alt + 0.0000000013
+    pixel_size_metre = 0.00030899*vehicle.location.global_relative_frame.alt + 0.0000000013
 
     x = (target_x - center_x) * pixel_size_metre
     y = (center_y - target_y) * pixel_size_metre
