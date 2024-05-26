@@ -152,21 +152,31 @@ def getTargetPosition(vehicle):
     debPrint("lzCoord lat:"+str(lzCoord.lat)+" long:"+str(lzCoord.lon)+" alt:"+str(lzCoord.alt))
     return lzCoord
     cmds = []
+
 def executeLanding(vehicle, cmds, lzCoord):
     global pargs
 
     landCmd = Command(0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT,
-                               mavutil.mavlink.MAV_CMD_NAV_LAND, 0, 0,
-                               0, mavutil.mavlink.PRECISION_LAND_MODE_DISABLED, 0, 0, lzCoord.lat, lzCoord.lon, lzCoord.alt)
+                      mavutil.mavlink.MAV_CMD_NAV_LAND, 0, 0,
+                      0, mavutil.mavlink.PRECISION_LAND_MODE_DISABLED, 0, 0, lzCoord.lat, lzCoord.lon, lzCoord.alt)
+
+    if pargs.addoroverwrite is False: #false = no overwrite
+        missionList = []
+        for cmd in cmds:
+            missionList.append(cmd)
+        missionList.append(landCmd)
+        cmds.clear()
+        for cmd in missionList:
+            cmds.add(cmd)
+    else:
+        cmds.clear()
+        cmds.add(landCmd)
 
     #TODO check if its better to
     # 1. add a waypoint at the end and continue mission
     # 1.1 make sure that MIS_RESTART is properly set to CONTINUE mission from start
     # 2. clear and create new mission with one point : land
     # 2.1 make sure that MIS_RESTART is properly set to RESTART mission from start
-    cmds.clear()
-    cmds.add(landCmd)
-
     if pargs.printmission:
         for cmd in cmds:
             print(cmd.command)
@@ -177,7 +187,7 @@ def executeLanding(vehicle, cmds, lzCoord):
     vehicle.mode = VehicleMode("AUTO")
 
 def distance(target_x, target_y, center_x, center_y):
-
+    #TODO calcul de grosseur de pixel
     pixel_size_metre = 0.000729394*altitude + 0.0000000013
 
     x = (target_x - center_x) * pixel_size_metre
@@ -320,12 +330,12 @@ def argParser():
     parser.add_argument("-dl",  "--dronelink",      default='127.0.0.1:14550', type=str,
                         help="drone comm link")
 
+    parser.add_argument("-ao",  "--addoroverwrite", default=True, type=bool, #action store false???
+                        help="Overwrite mission (True) or add landing point to end of mission (False)")
+
 #TODO
     parser.add_argument("-sd",  "--savedetection",  default=None, action="store_true",
                         help="save captured detection picture")
-
-    parser.add_argument("-ao",  "--addoroverwrite", default=True, type=bool,
-                        help="Overwrite mission (True) or add landing point to end of mission (False)")
 
     parser.add_argument("-rtl", "--returntolanding", default=None,  action="store_true",
                         help="return to home location (launch point) instead of \

@@ -7,11 +7,19 @@
     <list default="true" id="2b462339-c44c-446d-a821-8272cbe455d3" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/AutoLander.py" beforeDir="false" afterPath="$PROJECT_DIR$/AutoLander.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/DetectionTest.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/DetectionTest.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
     <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="Python Script" />
+      </list>
+    </option>
   </component>
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
@@ -28,20 +36,20 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "Python.AutoLander help.executor": "Debug",
-    "Python.AutoLander_first_test.executor": "Debug",
-    "Python.AutoLander_test1.executor": "Run",
-    "Python.CamTest.executor": "Run",
-    "Python.DetectionTest.executor": "Run",
-    "Python.detection test.executor": "Run",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "git-widget-placeholder": "main",
-    "last_opened_file_path": "/home/simon/usc-2023",
-    "settings.editor.selected.configurable": "com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;Python.AutoLander help.executor&quot;: &quot;Debug&quot;,
+    &quot;Python.AutoLander_first_test.executor&quot;: &quot;Debug&quot;,
+    &quot;Python.AutoLander_test1.executor&quot;: &quot;Run&quot;,
+    &quot;Python.CamTest.executor&quot;: &quot;Run&quot;,
+    &quot;Python.DetectionTest.executor&quot;: &quot;Run&quot;,
+    &quot;Python.detection test.executor&quot;: &quot;Run&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
+    &quot;last_opened_file_path&quot;: &quot;/home/simon/usc-2023&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable&quot;
   }
-}]]></component>
+}</component>
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">
       <recent name="$PROJECT_DIR$/tests" />
@@ -165,5 +173,16 @@
       <updated>1716060709619</updated>
     </task>
     <servers />
+  </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <default-breakpoints>
+        <breakpoint type="python-exception">
+          <properties notifyOnTerminate="true" exception="BaseException">
+            <option name="notifyOnTerminate" value="true" />
+          </properties>
+        </breakpoint>
+      </default-breakpoints>
+    </breakpoint-manager>
   </component>
 </project>

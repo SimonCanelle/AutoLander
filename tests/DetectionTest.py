@@ -11,7 +11,7 @@ class Coordinate:
     lon: float
     alt: float
 
-camId = 0
+camId = 2
 maxRetries = 100
 # we know the altitude???
 altitude = 15   #TODO set altitude to loiter alt
@@ -106,9 +106,9 @@ def main():
         lzCoord = getTargetPosition()
     
     #modify and execute mission for landing
-        print("Sending nav point to drone")
-        if pargs.fakegps is not None :
-            executeLanding(lzCoord)
+        #print("Sending nav point to drone")
+        #if pargs.fakegps is not None :
+        #    executeLanding(lzCoord)
 
     #close everything
     print("Program finished")
@@ -214,6 +214,7 @@ def get_image():
     img = None
     global camId
     camOpen = False
+    global cap
     cap = None
     while not camOpen:
         if camId > 10:
@@ -238,8 +239,7 @@ def get_image():
         else:
             print("Could not take picture of the ground")
 
-    if cap is not None:
-        cap.release()
+
 
     return img
 
@@ -308,3 +308,6 @@ def argParser():
 if __name__ == "__main__":
     argParser()
     main()
+    global cap
+    if cap is not None:
+        cap.release()
